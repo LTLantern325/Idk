@@ -16,7 +16,7 @@ class LogicJSONArray(LogicJSONNode):
         """Initialize array with optional capacity"""
         self._items: List[LogicJSONNode] = []
         if capacity > 0:
-            self._items.reserve(capacity)  # Hint for performance
+            # self._items.reserve(capacity)  # Hint for performance
 
     def get(self, index: int) -> Optional[LogicJSONNode]:
         """Get item at index"""
