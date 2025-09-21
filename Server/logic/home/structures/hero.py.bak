@@ -1,0 +1,201 @@
+"""
+Python conversion of Supercell.Laser.Logic.Home.Structures.Hero.cs
+Hero class for character progression
+"""
+
+from typing import Optional, TYPE_CHECKING
+from ..helper.byte_stream_helper import ByteStreamHelper
+
+if TYPE_CHECKING:
+    from ...data.character_data import CharacterData
+    from ...data.card_data import CardData
+
+class Hero:
+    """Hero class representing a character and its progression"""
+
+    # Static upgrade tables from C#
+    UPGRADE_POWER_POINTS_TABLE = [
+        20, 50, 100, 180, 310, 520, 860, 1410, 2300, 2300 + 1440
+    ]
+
+    UPGRADE_COST_TABLE = [
+        20, 35, 75, 140, 290, 480, 880, 1250, 1875, 2800
+    ]
+
+    def __init__(self, character_id: int):
+        """Initialize hero with character ID"""
+        self.character_id = character_id
+        self.card_id = 0
+
+        # Trophy progression
+        self.trophies = 0
+        self.highest_trophies = 0
+
+        # Power progression
+        self.power_points = 0
+        self.power_level = 11  # Start at max level in this version
+
+        # Selected equipment
+        self.selected_star_power_id = 0
+        self.selected_gadget_id = 0
+        self.selected_gear_id1 = 0
+        self.selected_gear_id2 = 1
+        self.selected_skin_id = 0
+        self.selected_over_charge_id = 0
+
+        # Initialize default equipment
+        self._initialize_default_equipment()
+
+    def _initialize_default_equipment(self) -> None:
+        """Initialize default equipment for hero"""
+        # Get default gadget (MetaType 5)
+        gadget = self.get_default_meta_for_hero(5)
+        if gadget:
+            self.selected_gadget_id = gadget.get_instance_id()
+
+        # Get default star power (MetaType 4)
+        star_power = self.get_default_meta_for_hero(4)
+        if star_power:
+            self.selected_star_power_id = star_power.get_instance_id()
+
+        # Get default overcharge (MetaType 6)
+        overcharge = self.get_default_meta_for_hero(6)
+        if overcharge:
+            self.selected_over_charge_id = overcharge.get_instance_id()
+
+        # Set unlock card ID (would use DataTables.GetUnlockCardFor)
+        # For now, simplified
+        self.card_id = 0
+
+    def get_character_data(self) -> Optional['CharacterData']:
+        """Get character data from DataTables"""
+        # This would use DataTables.Get(DataType.Character).GetDataByGlobalId(CharacterId)
+        # For now, simplified
+        return None
+
+    def get_card_data(self) -> Optional['CardData']:
+        """Get card data from DataTables"""
+        # This would use DataTables.Get(DataType.Card).GetDataByGlobalId(CardId)
+        # For now, simplified
+        return None
+
+    def add_trophies(self, trophies: int) -> None:
+        """Add trophies to hero"""
+        # Note: Original C# has early return, but we'll implement normally
+        self.trophies += trophies
+        self.highest_trophies = max(self.highest_trophies, self.trophies)
+
+    def set_trophies(self, trophies: int) -> None:
+        """Set trophy count"""
+        self.trophies = trophies
+        self.highest_trophies = max(self.highest_trophies, self.trophies)
+
+    def add_power_points(self, points: int) -> None:
+        """Add power points"""
+        self.power_points += points
+
+    def can_upgrade(self) -> bool:
+        """Check if hero can be upgraded"""
+        if self.power_level >= len(self.UPGRADE_POWER_POINTS_TABLE):
+            return False
+
+        required_points = self.UPGRADE_POWER_POINTS_TABLE[self.power_level - 1]
+        return self.power_points >= required_points
+
+    def get_upgrade_cost(self) -> int:
+        """Get upgrade cost for next level"""
+        if self.power_level >= len(self.UPGRADE_COST_TABLE):
+            return 0
+
+        return self.UPGRADE_COST_TABLE[self.power_level - 1]
+
+    def upgrade(self) -> bool:
+        """Upgrade hero power level"""
+        if not self.can_upgrade():
+            return False
+
+        required_points = self.UPGRADE_POWER_POINTS_TABLE[self.power_level - 1]
+        self.power_points -= required_points
+        self.power_level += 1
+        return True
+
+    def get_default_meta_for_hero(self, meta_type: int) -> Optional['CardData']:
+        """Get default meta card for hero"""
+        # This would search DataTables.Get(DataType.Card).GetDatas()
+        # For matching Target == CharacterData.Name && MetaType == meta_type
+        # Simplified implementation
+        return None
+
+    def set_selected_star_power(self, star_power_id: int) -> None:
+        """Set selected star power"""
+        self.selected_star_power_id = star_power_id
+
+    def set_selected_gadget(self, gadget_id: int) -> None:
+        """Set selected gadget"""
+        self.selected_gadget_id = gadget_id
+
+    def set_selected_skin(self, skin_id: int) -> None:
+        """Set selected skin"""
+        self.selected_skin_id = skin_id
+
+    def set_selected_gears(self, gear1_id: int, gear2_id: int) -> None:
+        """Set selected gears"""
+        self.selected_gear_id1 = gear1_id
+        self.selected_gear_id2 = gear2_id
+
+    def set_selected_overcharge(self, overcharge_id: int) -> None:
+        """Set selected overcharge"""
+        self.selected_over_charge_id = overcharge_id
+
+    def get_trophy_league(self) -> int:
+        """Get trophy league based on current trophies"""
+        if self.trophies < 100:
+            return 0
+        elif self.trophies < 200:
+            return 1
+        elif self.trophies < 300:
+            return 2
+        elif self.trophies < 500:
+            return 3
+        elif self.trophies < 750:
+            return 4
+        elif self.trophies < 1000:
+            return 5
+        else:
+            return 6
+
+    def is_max_level(self) -> bool:
+        """Check if hero is at max power level"""
+        return self.power_level >= len(self.UPGRADE_POWER_POINTS_TABLE)
+
+    def get_total_power_points_needed(self) -> int:
+        """Get total power points needed to max out"""
+        return sum(self.UPGRADE_POWER_POINTS_TABLE)
+
+    def encode(self, stream) -> None:
+        """Encode hero to stream"""
+        character_data = self.get_character_data()
+        ByteStreamHelper.write_data_reference(stream, character_data)
+        ByteStreamHelper.write_data_reference(stream, None)
+
+        stream.write_v_int(self.trophies)
+        stream.write_v_int(self.highest_trophies)
+        stream.write_v_int(self.power_level)
+
+    def decode(self, stream) -> None:
+        """Decode hero from stream"""
+        # Read character data reference
+        character_ref = ByteStreamHelper.read_data_reference(stream)
+        self.character_id = character_ref
+
+        # Read null reference
+        ByteStreamHelper.read_data_reference(stream)
+
+        self.trophies = stream.read_v_int()
+        self.highest_trophies = stream.read_v_int()
+        self.power_level = stream.read_v_int()
+
+    def __str__(self) -> str:
+        """String representation"""
+        return (f"Hero(char_id={self.character_id}, level={self.power_level}, "
+                f"trophies={self.trophies}, power_points={self.power_points})")

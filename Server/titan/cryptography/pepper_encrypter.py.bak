@@ -1,0 +1,78 @@
+"""
+Python conversion of Supercell.Laser.Titan.Cryptography.PepperEncrypter.cs
+Pepper encryption implementation
+"""
+
+import hashlib
+import secrets
+from typing import bytes
+
+class PepperEncrypter:
+    """Pepper encryption for secure communication"""
+
+    def __init__(self):
+        """Initialize pepper encrypter"""
+        self.pepper_key = b"laserproject2023"  # 16 bytes default key
+        self.salt_length = 16
+
+    def set_pepper_key(self, key: bytes) -> None:
+        """Set pepper encryption key"""
+        if len(key) == 16:
+            self.pepper_key = key
+        else:
+            raise ValueError("Pepper key must be 16 bytes")
+
+    def generate_salt(self) -> bytes:
+        """Generate random salt"""
+        return secrets.token_bytes(self.salt_length)
+
+    def encrypt(self, data: bytes, salt: bytes = None) -> bytes:
+        """Encrypt data with pepper"""
+        if salt is None:
+            salt = self.generate_salt()
+
+        # Create pepper hash
+        pepper_hash = hashlib.sha256(self.pepper_key + salt).digest()
+
+        # XOR encryption
+        encrypted = bytearray()
+        for i, byte in enumerate(data):
+            encrypted.append(byte ^ pepper_hash[i % len(pepper_hash)])
+
+        # Prepend salt to encrypted data
+        return salt + bytes(encrypted)
+
+    def decrypt(self, encrypted_data: bytes) -> bytes:
+        """Decrypt pepper encrypted data"""
+        if len(encrypted_data) < self.salt_length:
+            raise ValueError("Invalid encrypted data")
+
+        # Extract salt
+        salt = encrypted_data[:self.salt_length]
+        encrypted = encrypted_data[self.salt_length:]
+
+        # Create pepper hash
+        pepper_hash = hashlib.sha256(self.pepper_key + salt).digest()
+
+        # XOR decryption
+        decrypted = bytearray()
+        for i, byte in enumerate(encrypted):
+            decrypted.append(byte ^ pepper_hash[i % len(pepper_hash)])
+
+        return bytes(decrypted)
+
+    def hash_password(self, password: str, salt: bytes = None) -> tuple:
+        """Hash password with pepper and salt"""
+        if salt is None:
+            salt = self.generate_salt()
+
+        # Combine password, pepper, and salt
+        combined = password.encode('utf-8') + self.pepper_key + salt
+        password_hash = hashlib.sha256(combined).digest()
+
+        return password_hash, salt
+
+    def verify_password(self, password: str, stored_hash: bytes, salt: bytes) -> bool:
+        """Verify password against stored hash"""
+        computed_hash, _ = self.hash_password(password, salt)
+        return computed_hash == stored_hash
