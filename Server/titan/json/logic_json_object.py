@@ -17,8 +17,8 @@ class LogicJSONObject(LogicJSONNode):
         self._keys: List[str] = []
         self._items: List[LogicJSONNode] = []
         if capacity > 0:
-            self._keys.reserve(capacity)
-            self._items.reserve(capacity)
+            # self._keys.reserve(capacity)
+            # self._items.reserve(capacity)
 
     def destruct(self) -> None:
         """Clean up object"""
